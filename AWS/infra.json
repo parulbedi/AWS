@@ -18,27 +18,36 @@
               "AvailabilityZone": "ap-southeast-1a",
               "VpcId": {"Ref": "myCfVpc"},
               "CidrBlock": "10.0.0.0/24",
-              "Tags": [{ "Key": "Name", "Value":  "my-public-subnet" }]
+              "Tags": [{ "Key": "Name", "Value":  "my-public -subnet" }]
             }
           },
           
-          "myPrivateSubnet": {
+          "myPrivateSubnet1": {
             "Type": "AWS::EC2::Subnet",
             "Properties": {
               "AvailabilityZone": "ap-southeast-1a",
               "VpcId": {"Ref": "myCfVpc"},
               "CidrBlock": "10.0.1.0/24",
-              "Tags": [{ "Key": "Name", "Value":  "my-private-subnet" }]
+              "Tags": [{ "Key": "Name", "Value":  "my-private-subnet-1" }]
             }
           },
-
+  
+          "myPrivateSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+              "AvailabilityZone": "ap-southeast-1b",
+              "VpcId": {"Ref": "myCfVpc"},
+              "CidrBlock": "10.0.2.0/24",
+              "Tags": [{ "Key": "Name", "Value":  "my-private-subnet-2" }]
+            }
+          },
           
           "rdsDBSubnetGroup": {
              "Type": "AWS::RDS::DBSubnetGroup",
              "Properties": {
                 "DBSubnetGroupDescription": "This subnet is created for RDS",
                 "DBSubnetGroupName": "rdsDBSubnetGroup",
-                "SubnetIds": { "Ref": "myPrivateSubnet" },
+                "SubnetIds": [{ "Ref": "myPrivateSubnet1" }, { "Ref": "myPrivateSubnet2" }],
                 "Tags": [{ "Key": "Name", "Value":  "my-rds-subnet" }]
              }
           },

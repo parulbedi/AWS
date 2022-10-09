@@ -1,0 +1,205 @@
+"Parameters": {
+    "Owner": {
+      "Description": "Enter the Name of the owner for this Stack.",
+      "Type": "String",
+      "Default": "Name"
+    },
+    "VPC": {
+      "Description": "Select VPC form the available VPCs in your account.",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PrivateSubnet1": {
+      "Description": "Select Private Subnet 1.",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "PrivateSubnet2": {
+      "Description": "Select Private Subnet 2.",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "PrivateSubnet3": {
+      "Description": "Select Private Subnet 3.",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "MasterUsername": {
+      "Description": "Database administration name.",
+      "Type": "String",
+      "Default": "rdsroot"
+    },
+    "MasterUserPassword": {
+      "NoEcho": "true",
+      "Description": "Database administration password.",
+      "Type": "String",
+      "MinLength": "8",
+      "AllowedPattern": "[a-zA-Z0-9!?]*",
+      "ConstraintDescription": "Must only contain upper and lowercase letters and numbers"
+    },
+    "BackupRetentionPeriod": {
+      "Description": "Enter Backup Retention Period in Days.",
+      "Type": "Number",
+      "Default": "5"
+    },
+    "MultiAvailabilityZone": {
+      "Description": "Do you want to Enable Multi Availability Zones?",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "TcpPort": {
+      "Description": "Enter RDS Listening TCP Port number.",
+      "Type": "Number",
+      "Default": "3306"
+    },
+    "PreferredBackupWindow": {
+      "Description": "Enter Preferred Backup Window Time.",
+      "Type": "String",
+      "Default": "15:00-17:00"
+    },
+    "PreferredMaintenanceWindow": {
+      "Description": "Enter Preferred Maintenance Window Time.",
+      "Type": "String",
+      "Default": "Sun:18:00-Sun:22:00"
+    },
+    "AllocatedStorage": {
+      "Default": "15",
+      "Description": "Enter the size of the database (Gb)",
+      "Type": "Number",
+      "MinValue": "5",
+      "MaxValue": "6144",
+      "ConstraintDescription": "Must be between 5-6144"
+    },
+    "SnapshotOnDelete": {
+      "Description": "Do you want to create a Snapshot on instance delete?",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "AutoMinorVersionUpgrade": {
+      "Description": "Do you want to allow automatic minor version upgrade?",
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "InstanceType": {
+      "Description": "Select Instance Type.",
+      "Type": "String",
+      "Default": "db.t2.micro",
+      "ConstraintDescription": "Must be a valid EC2 instance type."
+    }
+  },
+  "Mappings": {
+    "Settings": {
+      "MySQL": {
+        "Engine": "MySQL",
+        "Version": "5.7"
+      }
+    }
+  },
+  "Conditions": {
+    "ConfigureSnapshotOnDelete": {
+      "Fn::Equals": [
+        {
+          "Ref": "SnapshotOnDelete"
+        },
+        "true"
+      ]
+    }
+  },
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Ownership"
+          },
+          "Parameters": [
+            "Owner"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Network Configuration"
+          },
+          "Parameters": [
+            "VPC",
+            "PrivateSubnet1",
+            "PrivateSubnet2",
+            "PrivateSubnet3"
+          ]
+        },
+        {
+          "Label": {
+            "default": "RDS Configuration"
+          },
+          "Parameters": [
+            "InstanceType",
+            "MasterUsername",
+            "MasterUserPassword",
+            "BackupRetentionPeriod",
+            "PreferredBackupWindow",
+            "PreferredMaintenanceWindow",
+            "SnapshotOnDelete",
+            "AllocatedStorage",
+            "AutoMinorVersionUpgrade",
+            "TcpPort",
+            "MultiAvailabilityZone"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "Owner": {
+          "default": "Team or Individual Owner"
+        },
+        "InstanceType": {
+          "default": "Instance Type"
+        },
+        "PrivateSubnet1": {
+          "default": "Private Subnet 1"
+        },
+        "PrivateSubnet2": {
+          "default": "Private Subnet 2"
+        },
+        "PrivateSubnet3": {
+          "default": "Private Subnet 3"
+        },
+        "MasterUsername": {
+          "default": "Master Username"
+        },
+        "MasterUserPassword": {
+          "default": "Master User Password"
+        },
+        "BackupRetentionPeriod": {
+          "default": "Backup Retention Period"
+        },
+        "PreferredBackupWindow": {
+          "default": "Preferred Backup Window"
+        },
+        "PreferredMaintenanceWindow": {
+          "default": "Preferred Maintenance Window"
+        },
+        "AllocatedStorage": {
+          "default": "Allocated Storage"
+        },
+        "AutoMinorVersionUpgrade": {
+          "default": "Auto Minor Version Upgrade"
+        },
+        "TcpPort": {
+          "default": "TCP Port"
+        },
+        "MultiAvailabilityZone": {
+          "default": "Multi Availability Zone?"
+        },
+        "SnapshotOnDelete": {
+          "default": "Snapshot On Delete?"
+        }
+      }
+    }
+  },

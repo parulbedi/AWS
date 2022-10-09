@@ -41,6 +41,66 @@
               "Tags": [{ "Key": "Name", "Value":  "my-private-subnet-2" }]
             }
           },
+
+          
+          "mySecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+              "GroupDescription" : "This is Security group for Cloudformation instance",
+              "SecurityGroupIngress" : [
+              {
+                "IpProtocol": "tcp",
+                "FromPort": "22",
+                "ToPort": "22",
+                "CidrIp": "0.0.0.0/0"
+              },
+              {
+                "IpProtocol": "tcp",
+                "FromPort": "80",
+                "ToPort": "80",
+                "CidrIp": "0.0.0.0/0"
+              }],
+
+              "VpcId" : { "Ref": "myCfVpc" }, 
+              "Tags":[{ "Key": "Name", "Value":  "my-sg" }]
+            }
+          },  
+          
+          "myEc2Webserver": {
+              "Type": "AWS::EC2::Instance",
+              "Properties": {
+                  "InstanceType": "t2.micro",
+                  "ImageId": "ami-00e912d13fbb4f225",
+                  "KeyName": "ssh-key", 
+                  "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{"Ref": "mySecurityGroup"}],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : {"Ref": "myPublicSubnet"}
+                  }],
+                  "Tags": [{ "Key": "Name", "Value": "EC2 Machine" }],
+                  "UserData": {
+                      "Fn::Base64": {
+                          "Fn::Join": [
+                              "",
+                              [
+                                  "#!/bin/bash -ex",
+                                  "sudo apt-get update -y",
+                                  "sudo apt install apache2 -y",
+                                  "sudo ufw app list",
+                                  "sudo ufw allow 'Apache'",
+                                  "sudo chmod  777 /var/www/html/index.html",
+                                  "echo '<h1> this web-server server is created using ec2 launch script </h1>' > /var/www/html/index.html",
+                                  "sudo systemctl start apache2"
+
+                              ]
+                          ]
+                      }
+                  }
+                  
+          }
+                  },
           
           "rdsDBSubnetGroup": {
              "Type": "AWS::RDS::DBSubnetGroup",
@@ -61,7 +121,7 @@
               "AllowMajorVersionUpgrade": true,
               "AutoMinorVersionUpgrade": false,
               "BackupRetentionPeriod": "7",
-              "DBInstanceIdentifier": "myCfRDS",
+              "DBInstanceIdentifier": "my-database",
               "DBName": "myDatabase", 
               "DBSubnetGroupName": {"Ref": "rdsDBSubnetGroup"},
               "Engine": "MySQL",

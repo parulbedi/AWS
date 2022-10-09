@@ -18,7 +18,7 @@
               "AvailabilityZone": "ap-southeast-1a",
               "VpcId": {"Ref": "myCfVpc"},
               "CidrBlock": "10.0.0.0/24",
-              "Tags": [{ "Key": "Name", "Value":  "my-public -subnet" }]
+              "Tags": [{ "Key": "Name", "Value":  "my-public-subnet" }]
             }
           },
           

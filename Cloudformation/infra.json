@@ -91,7 +91,7 @@
                                   "sudo ufw app list",
                                   "sudo ufw allow 'Apache'",
                                   "sudo chmod  777 /var/www/html/index.html",
-                                  "echo '<h1> this web-server server is created using ec2 launch script </h1>' > /var/www/html/index.html",
+                                  "echo \"<h1> this web-server server is created using ec2 launch script </h1>\"  > /var/www/html/index.html",
                                   "sudo systemctl start apache2"
 
                               ]

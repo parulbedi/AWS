@@ -71,7 +71,7 @@
               "Properties": {
                   "InstanceType": "t2.micro",
                   "ImageId": "ami-00e912d13fbb4f225",
-                  "KeyName": "ssh-key", 
+                  "KeyName": "my-ssh-key", 
                   "NetworkInterfaces" : [{
                     "GroupSet"                 : [{"Ref": "mySecurityGroup"}],
                     "AssociatePublicIpAddress" : "true",
@@ -101,17 +101,61 @@
                   
           }
                   },
+
           
-          "rdsDBSubnetGroup": {
+          "myCfIgw": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+              "Tags":[{ "Key": "Name", "Value":  "my-igw" }]
+            }
+          },
+          "AttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+              "VpcId": {"Ref": "myCfVpc"},
+              "InternetGatewayId": { "Ref": "myCfIgw" }
+            }
+          },
+
+
+          
+          "myCfRoutetable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+              "VpcId": {"Ref": "myCfVpc"},
+              "Tags": [{ "Key": "Name", "Value":  "my-routetable" }]
+            }
+          },
+
+
+          
+          "myCfRoute": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "AttachGateway",
+            "Properties": {
+              "RouteTableId": "myCfRoutetable",
+              "DestinationCidrBlock": "0.0.0.0/0",
+              "GatewayId": "myCfIgw"
+            }
+          },
+
+          "myRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+              "SubnetId": "myPublicSubnet",
+              "RouteTableId": "myCfRoutetable"
+            }
+          },
+          
+          "myrdsDBSubnetGroup": {
              "Type": "AWS::RDS::DBSubnetGroup",
              "Properties": {
                 "DBSubnetGroupDescription": "This subnet is created for RDS",
-                "DBSubnetGroupName": "rdsDBSubnetGroup",
+                "DBSubnetGroupName": "myrdsDBSubnetGroup",
                 "SubnetIds": [{ "Ref": "myPrivateSubnet1" }, { "Ref": "myPrivateSubnet2" }],
                 "Tags": [{ "Key": "Name", "Value":  "my-rds-subnet" }]
              }
           },
-          
           
           "rdsDBInstance": {
             "Type": "AWS::RDS::DBInstance",
@@ -123,7 +167,7 @@
               "BackupRetentionPeriod": "7",
               "DBInstanceIdentifier": "my-database",
               "DBName": "myDatabase", 
-              "DBSubnetGroupName": {"Ref": "rdsDBSubnetGroup"},
+              "DBSubnetGroupName": {"Ref": "myrdsDBSubnetGroup"},
               "Engine": "MySQL",
               "EngineVersion": "8.0.28",
               "MasterUsername": "user12345",
@@ -136,8 +180,6 @@
               "Tags":[{ "Key": "Name", "Value":  "my-RDS" }]
             }
           }
-          
-  
       },
       "Outputs": {
       }

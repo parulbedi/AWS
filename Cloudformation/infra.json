@@ -1,0 +1,181 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "RDS with Cloud Fromation",
+ 
+      "Resources": {
+          
+          "myCfVpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+              "CidrBlock": "10.0.0.0/16",
+              "Tags": [{ "Key": "Name", "Value":  "my-vpc" }]
+            }
+          },
+  
+          "myPublicSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+              "AvailabilityZone": "ap-southeast-1a",
+              "VpcId": {"Ref": "myCfVpc"},
+              "CidrBlock": "10.0.0.0/24",
+              "Tags": [{ "Key": "Name", "Value":  "my-public-subnet" }]
+            }
+          },
+          
+          "myPrivateSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+              "AvailabilityZone": "ap-southeast-1a",
+              "VpcId": {"Ref": "myCfVpc"},
+              "CidrBlock": "10.0.1.0/24",
+              "Tags": [{ "Key": "Name", "Value":  "my-private-subnet-1" }]
+            }
+          },
+  
+          "myPrivateSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+              "AvailabilityZone": "ap-southeast-1b",
+              "VpcId": {"Ref": "myCfVpc"},
+              "CidrBlock": "10.0.2.0/24",
+              "Tags": [{ "Key": "Name", "Value":  "my-private-subnet-2" }]
+            }
+          },
+
+          "mySecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+              "GroupDescription" : "This is Security group for Cloudformation instance",
+              "SecurityGroupIngress" : [
+              {
+                "IpProtocol": "tcp",
+                "FromPort": "22",
+                "ToPort": "22",
+                "CidrIp": "0.0.0.0/0"
+              },
+              {
+                "IpProtocol": "tcp",
+                "FromPort": "80",
+                "ToPort": "80",
+                "CidrIp": "0.0.0.0/0"
+              }],
+
+              "VpcId" : { "Ref": "myCfVpc" }, 
+              "Tags":[{ "Key": "Name", "Value":  "my-sg" }]
+            }
+          },  
+          
+          "myEc2Webserver": {
+              "Type": "AWS::EC2::Instance",
+              "Properties": {
+                  "InstanceType": "t2.micro",
+                  "ImageId": "ami-00e912d13fbb4f225",
+                  "KeyName": "my-ssh-key", 
+                  "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{"Ref": "mySecurityGroup"}],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : {"Ref": "myPublicSubnet"}
+                  }],
+               
+                  "Tags": [{ "Key": "Name", "Value": "EC2 Machine" }],
+                  "UserData": {
+                      "Fn::Base64": {
+                          "Fn::Join": [
+                              "",
+                              [
+                                  "#!/bin/bash",
+                                  "sudo apt-get update -y",
+                                  "sudo apt install apache2 -y",
+                                  "sudo ufw app list",
+                                  "sudo ufw allow 'Apache'",
+                                  "sudo chmod  777 /var/www/html/index.html",
+                                  "echo \"<h1> this web-server server is created using ec2 launch script </h1>\"  > /var/www/html/index.html",
+                                  "sudo systemctl start apache2"
+
+                              ]
+                          ]
+                      }
+                  }
+                  
+          }
+                  },
+
+          "myCfIgw": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+              "Tags":[{ "Key": "Name", "Value":  "my-igw" }]
+            }
+          },
+          "AttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+              "VpcId": {"Ref": "myCfVpc"},
+              "InternetGatewayId": { "Ref": "myCfIgw" }
+            }
+          },
+
+          "myCfRoutetable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+              "VpcId": {"Ref": "myCfVpc"},
+              "Tags": [{ "Key": "Name", "Value":  "my-routetable" }]
+            }
+          },
+
+          "myCfRoute": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "AttachGateway",
+            "Properties": {
+              "RouteTableId": { "Ref": "myCfRoutetable" },
+              "DestinationCidrBlock": "0.0.0.0/0",
+              "GatewayId": { "Ref": "myCfIgw" }
+            }
+          },
+
+          "myRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+              "SubnetId": {"Ref": "myPublicSubnet"},
+              "RouteTableId": {"Ref": "myCfRoutetable"}
+            }
+          },
+          
+          "myrdsDBSubnetGroup": {
+             "Type": "AWS::RDS::DBSubnetGroup",
+             "Properties": {
+                "DBSubnetGroupDescription": "This subnet is created for RDS",
+                "DBSubnetGroupName": "myrdsDBSubnetGroup",
+                "SubnetIds": [{ "Ref": "myPrivateSubnet1" }, { "Ref": "myPrivateSubnet2" }],
+                "Tags": [{ "Key": "Name", "Value":  "my-rds-subnet" }]
+             }
+          },
+          
+          "rdsDBInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+              "AllocatedStorage": "20",
+              "DBInstanceClass": "db.t2.micro",
+              "AllowMajorVersionUpgrade": true,
+              "AutoMinorVersionUpgrade": false,
+              "BackupRetentionPeriod": "7",
+              "DBInstanceIdentifier": "my-database",
+              "DBName": "myDatabase", 
+              "DBSubnetGroupName": {"Ref": "myrdsDBSubnetGroup"},
+              "Engine": "MySQL",
+              "EngineVersion": "8.0.28",
+              "MasterUsername": "user12345",
+              "MasterUserPassword": "user12345",
+              "MultiAZ": "true",
+              "Port": "3306",
+              "PubliclyAccessible": "false",
+              "StorageEncrypted": "false",
+              "StorageType": "gp2",
+              "Tags":[{ "Key": "Name", "Value":  "my-RDS" }]
+            }
+          }
+      },
+      "Outputs": {
+      }
+  }

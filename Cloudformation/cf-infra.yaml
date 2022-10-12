@@ -1,0 +1,99 @@
+Parameters:
+  vpcCidr:
+    Description: IP range (CIDR notation) for VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  publicsubnetcidr1:
+    Description: Public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.0.0/24 
+
+  publicsubnetcidr2:
+    Description: Public subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.1.0/24
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref vpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: my-cf-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: my-cf-igw
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: us-east-1a
+      CidrBlock: !Ref publicsubnetcidr1
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: my-cf-subnet-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: us-east-1b
+      CidrBlock: !Ref publicsubnetcidr2
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: my-cf-subnet-2
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        GroupDescription: Allow http Access
+        VpcId: !Ref VPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0149b2da6ceec4bb0
+      KeyName: "aws-key-reg"
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref "InstanceSecurityGroup"
+          SubnetId: !Ref "PublicSubnet1"
+      Tags:
+      - Key: Name
+        Value: EC2 Machine - 1
+
+        

@@ -1,99 +1,280 @@
-Parameters:
-  vpcCidr:
-    Description: IP range (CIDR notation) for VPC
-    Type: String
-    Default: 10.0.0.0/16
-
-  publicsubnetcidr1:
-    Description: Public subnet in the first Availability Zone
-    Type: String
-    Default: 10.0.0.0/24 
-
-  publicsubnetcidr2:
-    Description: Public subnet in the second Availability Zone
-    Type: String
-    Default: 10.0.1.0/24
-
 Resources:
-  VPC:
+
+  MyVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref vpcCidr
-      EnableDnsSupport: true
+      CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: my-cf-vpc
+          Value: my-vpc
 
-  InternetGateway:
+  MyPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: 10.0.0.0/24
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: My-Public-Subnet-1
+
+  MyPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: 10.0.1.0/24
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: My-Public-Subnet-2
+
+  MyIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: my-cf-igw
+          Value: my-igw   
 
-  InternetGatewayAttachment:
+  MyIGWAttach:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref VPC
+      InternetGatewayId: !Ref MyIGW
+      VpcId: !Ref MyVPC
 
-  PublicSubnet1:
-    Type: AWS::EC2::Subnet
+  # ELBAssociation1:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref ELBRT
+  #     SubnetId: !Ref ELBPublicSN1
+
+  # ELBAssociation2:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref ELBRT
+  #     SubnetId: !Ref ELBPublicSN2
+
+  # ELBDefaultPublicRoute:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: ELBIGWAttach
+  #   Properties:
+  #     RouteTableId: !Ref ELBRT
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref ELBIGW
+
+  MyRT:
+    Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: us-east-1a
-      CidrBlock: !Ref publicsubnetcidr1
-      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: my-cf-subnet-1
+          Value: my-rt
+      VpcId: !Ref MyVPC
 
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
+  RTAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: us-east-1b
-      CidrBlock: !Ref publicsubnetcidr2
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: my-cf-subnet-2
+      RouteTableId: !Ref MyRT
+      SubnetId: !Ref MyPublicSubnet1
 
-  InstanceSecurityGroup:
+  RTAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MyRT
+      SubnetId: !Ref MyPublicSubnet2
+
+  MyPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: MyIGWAttach
+    Properties:
+      RouteTableId: !Ref MyRT
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyIGW
+
+  MySG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-        GroupDescription: Allow http Access
-        VpcId: !Ref VPC
-        SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: 80
-            ToPort: 80
-            CidrIp: 0.0.0.0/0
-          - IpProtocol: tcp
-            FromPort: 22
-            ToPort: 22
-            CidrIp: 0.0.0.0/0
-        SecurityGroupEgress:
-          - IpProtocol: tcp
-            FromPort: 80
-            ToPort: 80
-            CidrIp: 0.0.0.0/0
+      GroupDescription: MySG
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
 
-  EC2Instance1:
+      - IpProtocol: udp
+        FromPort: '161'
+        ToPort: '161'
+        CidrIp: 0.0.0.0/0
+
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      VpcId: !Ref MyVPC 
+
+  # MyEC2Instance1:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     ImageId:  ami-01216e7612243e0ef
+  #     InstanceType: t2.micro
+  #     KeyName: "s3-key"
+  #     NetworkInterfaces:
+  #       - DeviceIndex: 0
+  #         SubnetId: !Ref MyPublicSubnet1
+  #         GroupSet: 
+  #           - !Ref MySG
+  #         AssociatePublicIpAddress: true
+  #     Tags:
+  #       - Key: Name
+  #         Value: my-ec2     
+
+  MyEC2Instance1:
     Type: AWS::EC2::Instance
     Properties:
+      ImageId:  ami-01216e7612243e0ef
       InstanceType: t2.micro
-      ImageId: ami-0149b2da6ceec4bb0
-      KeyName: "aws-key-reg"
-      NetworkInterfaces: 
-        - AssociatePublicIpAddress: true
-          DeviceIndex: "0"
-          GroupSet:
-            - !Ref "InstanceSecurityGroup"
-          SubnetId: !Ref "PublicSubnet1"
+      KeyName: "s3-key"
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref MyPublicSubnet1
+          GroupSet: 
+            - !Ref MySG
+          AssociatePublicIpAddress: true
       Tags:
-      - Key: Name
-        Value: EC2 Machine - 1
+        - Key: Name
+          Value: my-ec2-01
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #! /bin/bash
+            yun update -y
+            yum install -y httpd
+            systemctl enable httpd
+            systemctl start httpd
+            echo "This is 1st Instance" > /var/www/html/index.html
 
-        
+  MyEC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:  ami-01216e7612243e0ef
+      InstanceType: t2.micro
+      KeyName: "s3-key"
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref MyPublicSubnet2
+          GroupSet: 
+            - !Ref MySG
+          AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: my-ec2-02
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #! /bin/bash
+            yun update -y
+            yum install -y httpd
+            systemctl enable httpd
+            systemctl start httpd
+            echo "This is 2nd Instance" > /var/www/html/index.html
+
+  MyTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      Name: MyTG
+      Port: 80
+      Protocol: HTTP
+      Targets:
+        - Id: !Ref MyEC2Instance1
+          Port: 80
+        - Id: !Ref MyEC2Instance2
+          Port: 80
+      VpcId: !Ref MyVPC
+
+  MyALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyALB
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref MySG
+      Subnets:
+        - !Ref MyPublicSubnet1
+        - !Ref MyPublicSubnet2
+      Type: application
+
+  MyALBListner:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions: 
+        - Type: forward
+          TargetGroupArn: !Ref MyTG
+      LoadBalancerArn: !Ref MyALB
+      Port: 80
+      Protocol: HTTP  
+
+
+  # MyALBRule:
+  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  #   Properties:
+  #     Actions: 
+  #       - Type: forward
+  #         TargerGroupArn: !Ref MyTG
+  #     ListenerArn: !Ref MyALBListner
+  #     Priority: 1
+
+  MyALBRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref MyTG
+      Conditions:
+        - Field: http-header
+          HttpHeaderConfig:
+            HttpHeaderName: User-Agent
+            Values:
+              - Chrome
+      ListenerArn: !Ref MyALBListner
+      Priority: 1
+  
+  # myELBname:
+  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  #   Properties:
+  #     Scheme: internal
+  #     SecurityGroups:
+  #       - sg-id
+  #     Subnets:
+  #       - subnet-id
+  #     Instances:
+  #       - instance-id
+  #     Listeners:
+  #       - LoadBalancerPort: 80
+  #         InstancePort: 
+  #         Protocol: HTTP
+  #         InstanceProtocol: HTTP
+  #       - LoadBalancerPort: '80'
+  #         InstancePort: '80'
+  #         Protocol: HTTP
+  #         InstanceProtocol: HTTP
+  #     HealthCheck:
+  #       Target: TCP:port or HTTPS|HTTP:port/PathToPing
+  #       HealthyThreshold: 1
+  #       Interval: 5
+  #       Timeout: 10
+  #       UnhealthyThreshold: 1
+  
+Outputs:
+  WebsiteURL:
+    Description: ALB DNS-URL
+    Value:
+      Fn::Join:
+      - ''
+      - - http://
+        - Fn::GetAtt:
+          - MyALB
+          - DNSName

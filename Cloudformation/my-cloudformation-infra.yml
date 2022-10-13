@@ -117,7 +117,7 @@ Resources:
   #   Properties:
   #     ImageId:  ami-01216e7612243e0ef
   #     InstanceType: t2.micro
-  #     KeyName: "s3-key"
+  #     KeyName: "my-ec2-key"
   #     NetworkInterfaces:
   #       - DeviceIndex: 0
   #         SubnetId: !Ref MyPublicSubnet1
@@ -133,7 +133,7 @@ Resources:
     Properties:
       ImageId:  ami-01216e7612243e0ef
       InstanceType: t2.micro
-      KeyName: "s3-key"
+      KeyName: "my-ec2-key"
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !Ref MyPublicSubnet1
@@ -158,7 +158,7 @@ Resources:
     Properties:
       ImageId:  ami-01216e7612243e0ef
       InstanceType: t2.micro
-      KeyName: "s3-key"
+      KeyName: "my-ec2-key"
       NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !Ref MyPublicSubnet2
